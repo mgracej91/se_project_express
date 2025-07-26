@@ -9,14 +9,17 @@ const userSchema = new Schema({
     maxLength: 30,
     required: true,
   },
-  avatarURL: {
+  avatar: {
     required: true,
     type: String,
-    validate: {
-      validator(value) {
-        return validator.isURL(value);
+    URL: {
+      type: String,
+      validate: {
+        validator(value) {
+          return validator.isURL(value);
+        },
+        message: "You must enter a valid URL",
       },
-      message: "You must enter a valid URL",
     },
   },
 });

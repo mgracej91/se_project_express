@@ -14,7 +14,6 @@ mongoose
 
 app.use(express.json());
 
-const routes = require("./routes");
 app.use((req, res, next) => {
   req.user = {
     _id: "6880d91d19e5b03352a9fe6a",

@@ -1,6 +1,6 @@
 const ClothingItem = require("../models/clothingItem");
 const { errorStatus, errorMessage } = require("../utils/errors");
-const errorHandler = require("../utils/errors").errorHandler;
+const errorHandler = require("../utils/errors");
 
 const getClothingItems = (req, res) => {
   ClothingItem.find({})
@@ -33,7 +33,7 @@ const deleteItems = (req, res) => {
       throw error;
     })
     .then(() => {
-      res.status(204).send();
+      res.status(204).send({ message: "Item deleted successfully" });
     })
     .catch((err) => {
       errorHandler(err, res);
