@@ -1,6 +1,5 @@
 const ClothingItem = require("../models/clothingItem");
-const { errorStatus, errorMessage } = require("../utils/errors");
-const errorHandler = require("../utils/errors");
+const { errorHandler } = require("../utils/errors");
 
 const getClothingItems = (req, res) => {
   ClothingItem.find({})
@@ -33,7 +32,7 @@ const deleteItems = (req, res) => {
       throw error;
     })
     .then(() => {
-      res.status(204).send({ message: "Item deleted successfully" });
+      res.status(200).send({ message: "Item deleted successfully" });
     })
     .catch((err) => {
       errorHandler(err, res);
@@ -42,7 +41,7 @@ const deleteItems = (req, res) => {
 
 const likeItems = (req, res) => {
   const userId = req.user._id;
-  const itemId = req.params.itemId;
+  const { itemId } = req.params;
   ClothingItem.findByIdAndUpdate(
     itemId,
     { $addToSet: { likes: userId } },
@@ -62,7 +61,7 @@ const likeItems = (req, res) => {
 };
 const dislikeItems = (req, res) => {
   const userId = req.user._id;
-  const itemId = req.params.itemId;
+  const { itemId } = req.params;
   ClothingItem.findByIdAndUpdate(
     itemId,
     { $pull: { likes: userId } },

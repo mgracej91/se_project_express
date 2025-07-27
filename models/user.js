@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const { Schema } = mongoose;
 const validator = require("validator");
 
@@ -10,10 +11,13 @@ const userSchema = new Schema({
     required: true,
   },
   avatar: {
-    required: true,
     type: String,
-    URL: {
-      type: String,
+    required: true,
+    validate: {
+      validator(value) {
+        return validator.isURL(value);
+      },
+      message: "You must enter a valid URL",
       validate: {
         validator(value) {
           return validator.isURL(value);

@@ -15,19 +15,21 @@ const errorHandler = (err, res) => {
   if (err.name === "ValidationError") {
     return res
       .status(errorStatus.invalidInput)
-      .send({ errorMessage: errorMessage.invalidInput });
-  } else if (err.name === "DocumentNotFoundError") {
+      .send({ message: errorMessage.invalidInput });
+  }
+  if (err.statusCode === 404) {
     return res
       .status(errorStatus.notFound)
-      .send({ errorMessage: errorMessage.notFound });
-  } else if (err.name === "CastError") {
+      .send({ message: errorMessage.notFound });
+  }
+  if (err.name === "CastError") {
     return res
       .status(errorStatus.invalidInput)
-      .send({ errorMessage: errorMessage.invalidInput });
+      .send({ message: errorMessage.invalidInput });
   }
   return res
     .status(errorStatus.internalServerError)
-    .send({ errorMessage: errorMessage.internalServerError });
+    .send({ message: errorMessage.internalServerError });
 };
 
 module.exports = {
