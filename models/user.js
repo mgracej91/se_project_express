@@ -18,13 +18,23 @@ const userSchema = new Schema({
         return validator.isURL(value);
       },
       message: "You must enter a valid URL",
-      validate: {
-        validator(value) {
-          return validator.isURL(value);
-        },
-        message: "You must enter a valid URL",
-      },
     },
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    validate: {
+      validator(value) {
+        return validator.isEmail(value);
+      },
+      message: "You must enter a valid email",
+    },
+  },
+  password: {
+    type: String,
+    required: true,
+    select: false,
   },
 });
 

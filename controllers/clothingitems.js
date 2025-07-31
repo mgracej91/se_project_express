@@ -25,11 +25,19 @@ const createItems = (req, res) => {
 
 const deleteItems = (req, res) => {
   const { itemId } = req.params;
-  ClothingItem.findByIdAndDelete(itemId)
+  ClothingItem.findById(itemId)
     .orFail(() => {
       const error = new Error("Item ID not found");
       error.statusCode = 404;
       throw error;
+    })
+    .then((item) => {
+      if (!item.owner.equals(req.user._id)) {
+        const error = new Error("Cannot delete item not owned by user");
+        error.statusCode = 403;
+        throw error;
+      }
+      return ClothingItem.findByIdAndDelete(itemId);
     })
     .then(() => {
       res.status(200).send({ message: "Item deleted successfully" });
