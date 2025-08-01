@@ -1,11 +1,13 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../utils/config");
 const { errorHandler } = require("../utils/errors");
+const e = require("express");
 
 const auth = (req, res, next) => {
   const { authorization } = req.headers;
   if (!authorization || !authorization.startsWith("Bearer ")) {
     const error = new Error("Authorization required");
+    error.name = "UnauthorizedError";
     error.statusCode = 401;
     return errorHandler(error, res);
   }
@@ -14,10 +16,12 @@ const auth = (req, res, next) => {
   try {
     payload = jwt.verify(token, JWT_SECRET);
   } catch (err) {
+    error.name = "UnauthorizedError";
     return errorHandler(err, res);
   }
   req.user = payload;
   next();
+  return null;
 };
 
 module.exports = auth;

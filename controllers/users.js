@@ -1,18 +1,9 @@
 const bcrypt = require("bcryptjs");
+
+const jwt = require("jsonwebtoken");
 const { User } = require("../models/user");
 const { errorHandler } = require("../utils/errors");
 const { JWT_SECRET } = require("../utils/config");
-const jwt = require("jsonwebtoken");
-console.log("User controller loaded");
-const getUsers = (req, res) => {
-  User.find({})
-    .then((users) => {
-      res.status(200).send(users);
-    })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
-};
 
 const createUser = (req, res) => {
   const { name, avatar, email, password } = req.body;
@@ -38,13 +29,24 @@ const createUser = (req, res) => {
 
 const login = (req, res) => {
   const { email, password } = req.body;
-  User.findUserByCredentials({ email })
-    .select("+password")
+  User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
-        expiresIn: "7d",
+      if (!user) {
+        const error = new Error("Invalid email or password");
+        error.statusCode = 401;
+        throw error;
+      }
+      return bcrypt.compare(password, user.password).then((matched) => {
+        if (!matched) {
+          const error = new Error("Invalid email or password");
+          error.statusCode = 401;
+          throw error;
+        }
+        const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
+          expiresIn: "7d",
+        });
+        res.status(200).send({ token });
       });
-      res.status(200).send({ token });
     })
     .catch((err) => {
       errorHandler(err, res);
@@ -87,7 +89,6 @@ const updateProfile = (req, res) => {
 };
 
 module.exports = {
-  getUsers,
   createUser,
   login,
   getCurrentUser,

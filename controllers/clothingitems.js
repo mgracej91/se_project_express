@@ -35,6 +35,7 @@ const deleteItems = (req, res) => {
       if (!item.owner.equals(req.user._id)) {
         const error = new Error("Cannot delete item not owned by user");
         error.statusCode = 403;
+        error.name = "ForbiddenError";
         throw error;
       }
       return ClothingItem.findByIdAndDelete(itemId);

@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const { Schema } = mongoose;
 const validator = require("validator");
+const { find } = require("./clothingItem");
+const { errorHandler } = require("../utils/errors");
 
 const userSchema = new Schema({
   name: {
@@ -37,6 +39,20 @@ const userSchema = new Schema({
     select: false,
   },
 });
+
+userSchema.statics.findUserByCredentials = function (email, password) {
+  return this.findOne(email, password)
+    .then((user) => {
+      if (!user) {
+        return Promise.reject(new Error("Invalid email or password"));
+      }
+      return user;
+    })
+    .catch((err) => {
+      errorHandler(err);
+      return Promise.reject(err);
+    });
+};
 
 const User = mongoose.model("User", userSchema);
 
