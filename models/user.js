@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
+const bcrypt = require("bcryptjs");
+
 const { Schema } = mongoose;
 const validator = require("validator");
-const { find } = require("./clothingItem");
-const { errorHandler } = require("../utils/errors");
 
 const userSchema = new Schema({
   name: {
@@ -40,18 +40,26 @@ const userSchema = new Schema({
   },
 });
 
-userSchema.statics.findUserByCredentials = function (email, password) {
-  return this.findOne(email, password)
-    .then((user) => {
-      if (!user) {
-        return Promise.reject(new Error("Invalid email or password"));
-      }
-      return user;
-    })
-    .catch((err) => {
-      errorHandler(err);
-      return Promise.reject(err);
-    });
+userSchema.statics.findUserByCredentials = async function (email, password) {
+  try {
+    const user = await this.findOne({ email }).select("password");
+    if (!user) {
+      const error = new Error("Invalid email or password");
+      error.name = "UnauthorizedError";
+      throw error;
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      const error = new Error("Invalid email or password");
+      error.name = "UnauthorizedError";
+      throw error;
+    }
+    user.password = undefined;
+    return user;
+  } catch (error) {
+    error.name = "UnauthorizedError";
+    throw error;
+  }
 };
 
 const User = mongoose.model("User", userSchema);

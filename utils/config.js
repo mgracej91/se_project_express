@@ -1,4 +1,4 @@
-const JWT_SECRET = process.JWT_SECRET;
+const { JWT_SECRET = "dev-key" } = process.env;
 
 module.exports = {
   JWT_SECRET,

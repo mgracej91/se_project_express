@@ -11,7 +11,7 @@ router.post("/signin", login);
 router.post("/signup", createUser);
 
 router.use((req, res) => {
-  res.status(errorStatus.notFound).send({ errorMessage: "Page not found" });
+  res.status(errorStatus.notFound).send({ message: "Page not found" });
 });
 
 module.exports = router;

@@ -33,20 +33,13 @@ const login = (req, res) => {
     .then((user) => {
       if (!user) {
         const error = new Error("Invalid email or password");
-        error.statusCode = 401;
-        throw error;
+        error.name = "UnauthorizedError";
+        return Promise.reject(error);
       }
-      return bcrypt.compare(password, user.password).then((matched) => {
-        if (!matched) {
-          const error = new Error("Invalid email or password");
-          error.statusCode = 401;
-          throw error;
-        }
-        const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
-          expiresIn: "7d",
-        });
-        res.status(200).send({ token });
+      const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
+        expiresIn: "7d",
       });
+      return res.status(200).send({ token });
     })
     .catch((err) => {
       errorHandler(err, res);
