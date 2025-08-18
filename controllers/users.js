@@ -1,11 +1,9 @@
 const bcrypt = require("bcryptjs");
-
 const jwt = require("jsonwebtoken");
 const { User } = require("../models/user");
-const { errorHandler } = require("../utils/errors");
 const { JWT_SECRET } = require("../utils/config");
 
-const createUser = (req, res) => {
+const createUser = (req, res, next) => {
   const { name, avatar, email, password } = req.body;
   bcrypt
     .hash(password, 10)
@@ -19,15 +17,13 @@ const createUser = (req, res) => {
     )
     .then((user) => {
       const userWithoutPassword = user.toObject();
-      delete userWithoutPassword.password; // Exclude password from response
+      delete userWithoutPassword.password;
       res.status(201).send(userWithoutPassword);
     })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .catch(next);
 };
 
-const login = (req, res) => {
+const login = (req, res, next) => {
   const { email, password } = req.body;
   User.findUserByCredentials(email, password)
     .then((user) => {
@@ -41,12 +37,10 @@ const login = (req, res) => {
       });
       return res.status(200).send({ token });
     })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .catch(next);
 };
 
-const getCurrentUser = (req, res) => {
+const getCurrentUser = (req, res, next) => {
   const userId = req.user._id;
   User.findById(userId)
     .orFail(() => {
@@ -57,11 +51,10 @@ const getCurrentUser = (req, res) => {
     .then((user) => {
       res.status(200).send(user);
     })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .catch(next);
 };
-const updateProfile = (req, res) => {
+
+const updateProfile = (req, res, next) => {
   const { name, avatar } = req.body;
   return User.findByIdAndUpdate(
     req.user._id,
@@ -76,9 +69,7 @@ const updateProfile = (req, res) => {
     .then((user) => {
       res.status(200).send(user);
     })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .catch(next);
 };
 
 module.exports = {

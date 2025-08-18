@@ -1,29 +1,20 @@
 const ClothingItem = require("../models/clothingItem");
-const { errorHandler } = require("../utils/errors");
 
-const getClothingItems = (req, res) => {
+const getClothingItems = (req, res, next) => {
   ClothingItem.find({})
-    .then((items) => {
-      res.status(200).send(items);
-    })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .then((items) => res.status(200).send(items))
+    .catch(next);
 };
 
-const createItems = (req, res) => {
+const createItems = (req, res, next) => {
   const { name, imageUrl, weather } = req.body;
   const owner = req.user._id;
   ClothingItem.create({ name, imageUrl, weather, owner })
-    .then((item) => {
-      res.status(201).send(item);
-    })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .then((item) => res.status(201).send(item))
+    .catch(next);
 };
 
-const deleteItems = (req, res) => {
+const deleteItems = (req, res, next) => {
   const { itemId } = req.params;
   ClothingItem.findById(itemId)
     .orFail(() => {
@@ -40,15 +31,11 @@ const deleteItems = (req, res) => {
       }
       return ClothingItem.findByIdAndDelete(itemId);
     })
-    .then(() => {
-      res.status(200).send({ message: "Item deleted successfully" });
-    })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .then(() => res.status(200).send({ message: "Item deleted successfully" }))
+    .catch(next);
 };
 
-const likeItems = (req, res) => {
+const likeItems = (req, res, next) => {
   const userId = req.user._id;
   const { itemId } = req.params;
   ClothingItem.findByIdAndUpdate(
@@ -61,14 +48,11 @@ const likeItems = (req, res) => {
       error.statusCode = 404;
       throw error;
     })
-    .then((item) => {
-      res.status(200).send(item);
-    })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .then((item) => res.status(200).send(item))
+    .catch(next);
 };
-const dislikeItems = (req, res) => {
+
+const dislikeItems = (req, res, next) => {
   const userId = req.user._id;
   const { itemId } = req.params;
   ClothingItem.findByIdAndUpdate(
@@ -81,12 +65,8 @@ const dislikeItems = (req, res) => {
       error.statusCode = 404;
       throw error;
     })
-    .then((item) => {
-      res.status(200).send(item);
-    })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .then((item) => res.status(200).send(item))
+    .catch(next);
 };
 
 module.exports = {
