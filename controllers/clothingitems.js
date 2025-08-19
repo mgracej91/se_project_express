@@ -1,78 +1,104 @@
-const ClothingItem = require("../models/clothingItem");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { User } = require("../models/user");
+const { JWT_SECRET } = require("../utils/config");
+const {
+  BadRequestError,
+  UnauthorizedError,
+  NotFoundError,
+  ConflictError,
+} = require("../utils/errors");
 
-const getClothingItems = (req, res, next) => {
-  ClothingItem.find({})
-    .then((items) => res.status(200).send(items))
-    .catch(next);
-};
-
-const createItems = (req, res, next) => {
-  const { name, imageUrl, weather } = req.body;
-  const owner = req.user._id;
-  ClothingItem.create({ name, imageUrl, weather, owner })
-    .then((item) => res.status(201).send(item))
-    .catch(next);
-};
-
-const deleteItems = (req, res, next) => {
-  const { itemId } = req.params;
-  ClothingItem.findById(itemId)
-    .orFail(() => {
-      const error = new Error("Item ID not found");
-      error.statusCode = 404;
-      throw error;
+const createUser = (req, res, next) => {
+  const { name, avatar, email, password } = req.body;
+  bcrypt
+    .hash(password, 10)
+    .then((hash) =>
+      User.create({
+        name,
+        avatar,
+        email,
+        password: hash,
+      })
+    )
+    .then((user) => {
+      const userWithoutPassword = user.toObject();
+      delete userWithoutPassword.password;
+      res.status(201).send(userWithoutPassword);
     })
-    .then((item) => {
-      if (!item.owner.equals(req.user._id)) {
-        const error = new Error("Cannot delete item not owned by user");
-        error.statusCode = 403;
-        error.name = "ForbiddenError";
-        throw error;
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        next(new BadRequestError("Invalid user data"));
+      } else if (err.code === 11000) {
+        next(new ConflictError("User with this email already exists"));
+      } else {
+        next(err);
       }
-      return ClothingItem.findByIdAndDelete(itemId);
-    })
-    .then(() => res.status(200).send({ message: "Item deleted successfully" }))
-    .catch(next);
+    });
 };
 
-const likeItems = (req, res, next) => {
-  const userId = req.user._id;
-  const { itemId } = req.params;
-  ClothingItem.findByIdAndUpdate(
-    itemId,
-    { $addToSet: { likes: userId } },
-    { new: true }
-  )
-    .orFail(() => {
-      const error = new Error("User ID not found");
-      error.statusCode = 404;
-      throw error;
+const login = (req, res, next) => {
+  const { email, password } = req.body;
+  User.findUserByCredentials(email, password)
+    .then((user) => {
+      if (!user) {
+        return next(new UnauthorizedError("Invalid email or password"));
+      }
+      const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
+        expiresIn: "7d",
+      });
+      return res.status(200).send({ token });
     })
-    .then((item) => res.status(200).send(item))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === "UnauthorizedError") {
+        next(new UnauthorizedError("Invalid email or password"));
+      } else {
+        next(err);
+      }
+    });
 };
 
-const dislikeItems = (req, res, next) => {
+const getCurrentUser = (req, res, next) => {
   const userId = req.user._id;
-  const { itemId } = req.params;
-  ClothingItem.findByIdAndUpdate(
-    itemId,
-    { $pull: { likes: userId } },
-    { new: true }
-  )
-    .orFail(() => {
-      const error = new Error("User ID not found");
-      error.statusCode = 404;
-      throw error;
+  User.findById(userId)
+    .orFail(() => new NotFoundError("User ID not found"))
+    .then((user) => {
+      res.status(200).send(user);
     })
-    .then((item) => res.status(200).send(item))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === "CastError") {
+        next(new BadRequestError("Invalid user ID format"));
+      } else {
+        next(err);
+      }
+    });
+};
+
+const updateProfile = (req, res, next) => {
+  const { name, avatar } = req.body;
+  return User.findByIdAndUpdate(
+    req.user._id,
+    { name, avatar },
+    { new: true, runValidators: true }
+  )
+    .orFail(() => new NotFoundError("User ID not found"))
+    .then((user) => {
+      res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        next(new BadRequestError("Invalid profile data"));
+      } else if (err.name === "CastError") {
+        next(new BadRequestError("Invalid user ID format"));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports = {
-  getClothingItems,
-  createItems,
-  deleteItems,
-  likeItems,
-  dislikeItems,
+  createUser,
+  login,
+  getCurrentUser,
+  updateProfile,
 };
