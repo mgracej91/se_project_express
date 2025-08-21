@@ -1,104 +1,98 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { User } = require("../models/user");
-const { JWT_SECRET } = require("../utils/config");
-const {
-  BadRequestError,
-  UnauthorizedError,
-  NotFoundError,
-  ConflictError,
-} = require("../utils/errors");
+const ClothingItem = require("../models/clothingItem");
+const { errorHandler } = require("../utils/errors");
 
-const createUser = (req, res, next) => {
-  const { name, avatar, email, password } = req.body;
-  bcrypt
-    .hash(password, 10)
-    .then((hash) =>
-      User.create({
-        name,
-        avatar,
-        email,
-        password: hash,
-      })
-    )
-    .then((user) => {
-      const userWithoutPassword = user.toObject();
-      delete userWithoutPassword.password;
-      res.status(201).send(userWithoutPassword);
+const getClothingItems = (req, res) => {
+  ClothingItem.find({})
+    .then((items) => {
+      res.status(200).send(items);
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        next(new BadRequestError("Invalid user data"));
-      } else if (err.code === 11000) {
-        next(new ConflictError("User with this email already exists"));
-      } else {
-        next(err);
-      }
+      errorHandler(err, res);
     });
 };
 
-const login = (req, res, next) => {
-  const { email, password } = req.body;
-  User.findUserByCredentials(email, password)
-    .then((user) => {
-      if (!user) {
-        return next(new UnauthorizedError("Invalid email or password"));
-      }
-      const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
-        expiresIn: "7d",
-      });
-      return res.status(200).send({ token });
+const createItems = (req, res) => {
+  const { name, imageUrl, weather } = req.body;
+  const owner = req.user._id;
+  ClothingItem.create({ name, imageUrl, weather, owner })
+    .then((item) => {
+      res.status(201).send(item);
     })
     .catch((err) => {
-      if (err.name === "UnauthorizedError") {
-        next(new UnauthorizedError("Invalid email or password"));
-      } else {
-        next(err);
-      }
+      errorHandler(err, res);
     });
 };
 
-const getCurrentUser = (req, res, next) => {
+const deleteItems = (req, res) => {
+  const { itemId } = req.params;
+  ClothingItem.findById(itemId)
+    .orFail(() => {
+      const error = new Error("Item ID not found");
+      error.statusCode = 404;
+      throw error;
+    })
+    .then((item) => {
+      if (!item.owner.equals(req.user._id)) {
+        const error = new Error("Cannot delete item not owned by user");
+        error.statusCode = 403;
+        error.name = "ForbiddenError";
+        throw error;
+      }
+      return ClothingItem.findByIdAndDelete(itemId);
+    })
+    .then(() => {
+      res.status(200).send({ message: "Item deleted successfully" });
+    })
+    .catch((err) => {
+      errorHandler(err, res);
+    });
+};
+
+const likeItems = (req, res) => {
   const userId = req.user._id;
-  User.findById(userId)
-    .orFail(() => new NotFoundError("User ID not found"))
-    .then((user) => {
-      res.status(200).send(user);
+  const { itemId } = req.params;
+  ClothingItem.findByIdAndUpdate(
+    itemId,
+    { $addToSet: { likes: userId } },
+    { new: true }
+  )
+    .orFail(() => {
+      const error = new Error("User ID not found");
+      error.statusCode = 404;
+      throw error;
+    })
+    .then((item) => {
+      res.status(200).send(item);
     })
     .catch((err) => {
-      if (err.name === "CastError") {
-        next(new BadRequestError("Invalid user ID format"));
-      } else {
-        next(err);
-      }
+      errorHandler(err, res);
     });
 };
-
-const updateProfile = (req, res, next) => {
-  const { name, avatar } = req.body;
-  return User.findByIdAndUpdate(
-    req.user._id,
-    { name, avatar },
-    { new: true, runValidators: true }
+const dislikeItems = (req, res) => {
+  const userId = req.user._id;
+  const { itemId } = req.params;
+  ClothingItem.findByIdAndUpdate(
+    itemId,
+    { $pull: { likes: userId } },
+    { new: true }
   )
-    .orFail(() => new NotFoundError("User ID not found"))
-    .then((user) => {
-      res.status(200).send(user);
+    .orFail(() => {
+      const error = new Error("User ID not found");
+      error.statusCode = 404;
+      throw error;
+    })
+    .then((item) => {
+      res.status(200).send(item);
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        next(new BadRequestError("Invalid profile data"));
-      } else if (err.name === "CastError") {
-        next(new BadRequestError("Invalid user ID format"));
-      } else {
-        next(err);
-      }
+      errorHandler(err, res);
     });
 };
 
 module.exports = {
-  createUser,
-  login,
-  getCurrentUser,
-  updateProfile,
+  getClothingItems,
+  createItems,
+  deleteItems,
+  likeItems,
+  dislikeItems,
 };
