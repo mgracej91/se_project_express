@@ -28,7 +28,10 @@ This back-end project is focused on creating a server for the WTWR (What to wear
 
   ## Deployment
 
-This webpage is deployed to GitHubPages
+- My deployed projects domain name is
+  https://wtwr.fin-tech.com
+
+This webpage is also deployed to GitHubPages
 
 - [Deployment Link:] https://github.com/mgracej91/se_project_express.git
 
