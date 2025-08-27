@@ -28,8 +28,10 @@ This back-end project is focused on creating a server for the WTWR (What to wear
 
   ## Deployment
 
-- My deployed projects domain name is
-  https://wtwr.fin-tech.com
+- My deployed projects domain name is:
+  wtwr.fin-tech.com
+  Frontend - https://wtwr.fin-tech.com
+  Backend - https://api.wtwr.fin-tech.com
 
 This webpage is also deployed to GitHubPages
 

@@ -11,7 +11,7 @@ const {
 
 const createUser = (req, res, next) => {
   const { name, avatar, email, password } = req.body;
-  bcrypt
+  return bcrypt
     .hash(password, 10)
     .then((hash) =>
       User.create({
@@ -24,22 +24,26 @@ const createUser = (req, res, next) => {
     .then((user) => {
       const userWithoutPassword = user.toObject();
       delete userWithoutPassword.password;
-      res.status(201).send(userWithoutPassword);
+      return res.status(201).send(userWithoutPassword);
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        next(new BadRequestError("Invalid user data"));
-      } else if (err.code === 11000) {
-        next(new ConflictError("User with this email already exists"));
-      } else {
-        next(err);
+        return next(new BadRequestError("Invalid user data"));
       }
+      if (err.code === 11000) {
+        return next(new ConflictError("User with this email already exists"));
+      }
+      return next(err);
     });
 };
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
-  User.findUserByCredentials(email, password)
+  if (!email || !password) {
+    return next(new BadRequestError("Email and password are required"));
+  }
+
+  return User.findUserByCredentials(email, password)
     .then((user) => {
       if (!user) {
         return next(new UnauthorizedError("Invalid email or password"));
@@ -51,26 +55,22 @@ const login = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === "UnauthorizedError") {
-        next(new UnauthorizedError("Invalid email or password"));
-      } else {
-        next(err);
+        return next(new UnauthorizedError("Invalid email or password"));
       }
+      return next(err);
     });
 };
 
 const getCurrentUser = (req, res, next) => {
   const userId = req.user._id;
-  User.findById(userId)
+  return User.findById(userId)
     .orFail(() => new NotFoundError("User ID not found"))
-    .then((user) => {
-      res.status(200).send(user);
-    })
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === "CastError") {
-        next(new BadRequestError("Invalid user ID format"));
-      } else {
-        next(err);
+        return next(new BadRequestError("Invalid user ID format"));
       }
+      return next(err);
     });
 };
 
@@ -82,17 +82,15 @@ const updateProfile = (req, res, next) => {
     { new: true, runValidators: true }
   )
     .orFail(() => new NotFoundError("User ID not found"))
-    .then((user) => {
-      res.status(200).send(user);
-    })
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        next(new BadRequestError("Invalid profile data"));
-      } else if (err.name === "CastError") {
-        next(new BadRequestError("Invalid user ID format"));
-      } else {
-        next(err);
+        return next(new BadRequestError("Invalid profile data"));
       }
+      if (err.name === "CastError") {
+        return next(new BadRequestError("Invalid user ID format"));
+      }
+      return next(err);
     });
 };
 

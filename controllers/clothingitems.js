@@ -1,17 +1,15 @@
 const ClothingItem = require("../models/clothingItem");
-const { errorHandler } = require("../utils/errors");
+const { NotFoundError, ForbiddenError } = require("../utils/errors");
 
-const getClothingItems = (req, res) => {
+const getClothingItems = (req, res, next) => {
   ClothingItem.find({})
     .then((items) => {
       res.status(200).send(items);
     })
-    .catch((err) => {
-      errorHandler(err, res);
-    });
+    .catch((err) => next(err));
 };
 
-const createItems = (req, res) => {
+const createItems = (req, res, next) => {
   const { name, imageUrl, weather } = req.body;
   const owner = req.user._id;
   ClothingItem.create({ name, imageUrl, weather, owner })
@@ -19,24 +17,22 @@ const createItems = (req, res) => {
       res.status(201).send(item);
     })
     .catch((err) => {
-      errorHandler(err, res);
+      if (err.name === "CastError") {
+        return res.status(400).send({ message: "Invalid item ID format" });
+      }
+      return next(err);
     });
 };
 
-const deleteItems = (req, res) => {
+const deleteItems = (req, res, next) => {
   const { itemId } = req.params;
   ClothingItem.findById(itemId)
     .orFail(() => {
-      const error = new Error("Item ID not found");
-      error.statusCode = 404;
-      throw error;
+      throw new NotFoundError("Item ID not found");
     })
     .then((item) => {
       if (!item.owner.equals(req.user._id)) {
-        const error = new Error("Cannot delete item not owned by user");
-        error.statusCode = 403;
-        error.name = "ForbiddenError";
-        throw error;
+        throw new ForbiddenError("Cannot delete item not owned by user");
       }
       return ClothingItem.findByIdAndDelete(itemId);
     })
@@ -44,11 +40,14 @@ const deleteItems = (req, res) => {
       res.status(200).send({ message: "Item deleted successfully" });
     })
     .catch((err) => {
-      errorHandler(err, res);
+      if (err.name === "CastError") {
+        return res.status(400).send({ message: "Invalid item ID format" });
+      }
+      return next(err);
     });
 };
 
-const likeItems = (req, res) => {
+const likeItems = (req, res, next) => {
   const userId = req.user._id;
   const { itemId } = req.params;
   ClothingItem.findByIdAndUpdate(
@@ -57,18 +56,19 @@ const likeItems = (req, res) => {
     { new: true }
   )
     .orFail(() => {
-      const error = new Error("User ID not found");
-      error.statusCode = 404;
-      throw error;
+      throw new NotFoundError("Item ID not found");
     })
     .then((item) => {
       res.status(200).send(item);
     })
     .catch((err) => {
-      errorHandler(err, res);
+      if (err.name === "CastError") {
+        return res.status(400).send({ message: "Invalid item ID format" });
+      }
+      return next(err);
     });
 };
-const dislikeItems = (req, res) => {
+const dislikeItems = (req, res, next) => {
   const userId = req.user._id;
   const { itemId } = req.params;
   ClothingItem.findByIdAndUpdate(
@@ -77,15 +77,16 @@ const dislikeItems = (req, res) => {
     { new: true }
   )
     .orFail(() => {
-      const error = new Error("User ID not found");
-      error.statusCode = 404;
-      throw error;
+      throw new NotFoundError("Item ID not found");
     })
     .then((item) => {
       res.status(200).send(item);
     })
     .catch((err) => {
-      errorHandler(err, res);
+      if (err.name === "CastError") {
+        return res.status(400).send({ message: "Invalid item ID format" });
+      }
+      return next(err);
     });
 };
 

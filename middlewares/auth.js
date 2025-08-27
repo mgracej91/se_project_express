@@ -15,7 +15,7 @@ const auth = (req, res, next) => {
     return next(new UnauthorizedError("Authorization required"));
   }
   req.user = payload;
-  next();
+  return next();
 };
 
 module.exports = auth;
