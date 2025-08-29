@@ -1,5 +1,7 @@
 const ClothingItem = require("../models/clothingItem");
-const { NotFoundError, ForbiddenError } = require("../utils/errors");
+const BadRequestError = require("../utils/errors/BadRequestError");
+const ForbiddenError = require("../utils/errors/ForbiddenError");
+const NotFoundError = require("../utils/errors/NotFoundError");
 
 const getClothingItems = (req, res, next) => {
   ClothingItem.find({})
@@ -17,8 +19,8 @@ const createItems = (req, res, next) => {
       res.status(201).send(item);
     })
     .catch((err) => {
-      if (err.name === "CastError") {
-        return res.status(400).send({ message: "Invalid item ID format" });
+      if (err.name === "ValidationError") {
+        return next(new BadRequestError("Invalid data"));
       }
       return next(err);
     });
@@ -41,7 +43,7 @@ const deleteItems = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === "CastError") {
-        return res.status(400).send({ message: "Invalid item ID format" });
+        return next(new BadRequestError("Invalid item ID format"));
       }
       return next(err);
     });
@@ -63,7 +65,7 @@ const likeItems = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === "CastError") {
-        return res.status(400).send({ message: "Invalid item ID format" });
+        return next(new BadRequestError("Invalid item ID format"));
       }
       return next(err);
     });
@@ -84,7 +86,7 @@ const dislikeItems = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === "CastError") {
-        return res.status(400).send({ message: "Invalid item ID format" });
+        return next(new BadRequestError("Invalid item ID format"));
       }
       return next(err);
     });
