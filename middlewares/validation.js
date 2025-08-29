@@ -21,10 +21,6 @@ const validateId = (value, helpers) => {
 };
 
 const validateClothingItem = celebrate({
-  weather: Joi.string().valid("cold", "warm", "hot").required().messages({
-    "any.required": 'The "weather" field must be filled in',
-    "any.only": 'The "weather" field must be one of "cold", "warm", "hot"',
-  }),
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30).messages({
       "string.empty": 'The "name" field must be filled in',
@@ -34,6 +30,10 @@ const validateClothingItem = celebrate({
     imageUrl: Joi.string().required().custom(validateURL).messages({
       "string.empty": 'The "imageUrl" field must be filled in',
       "string.uri": 'the "imageUrl" field must be a valid url',
+    }),
+    weather: Joi.string().valid("cold", "warm", "hot").required().messages({
+      "any.required": 'The "weather" field must be filled in',
+      "any.only": 'The "weather" field must be one of "cold", "warm", "hot"',
     }),
   }),
 });
@@ -73,7 +73,7 @@ const validateLogin = celebrate({
 
 const validateItemId = celebrate({
   params: Joi.object().keys({
-    id: Joi.string().required().custom(validateId).messages({
+    itemId: Joi.string().required().custom(validateId).messages({
       "string.empty": 'The "itemId" field must be filled in',
       "string.pattern.base":
         'The "itemId" field must be a valid MongoDB ObjectId',
@@ -83,7 +83,7 @@ const validateItemId = celebrate({
 
 const validateUserId = celebrate({
   params: Joi.object().keys({
-    id: Joi.string().required().custom(validateId).messages({
+    userId: Joi.string().required().custom(validateId).messages({
       "string.empty": 'The "userId" field must be filled in',
       "string.pattern.base":
         'The "userId" field must be a valid MongoDB ObjectId',
